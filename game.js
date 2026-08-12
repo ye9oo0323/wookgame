@@ -141,7 +141,7 @@
   const tutorialSound = new Audio("assets/sound/tutorial.mp3");
   tutorialSound.preload = "auto";
 
-  const backgroundSound = new Audio("assets/sound/backsound.m4A");
+  const backgroundSound = new Audio("assets/sound/backsound.mp3");
   backgroundSound.preload = "auto";
   backgroundSound.loop = true;
   const BACKGROUND_VOLUME = 0.28;
