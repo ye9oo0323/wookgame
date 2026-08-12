@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const BUILD_ID = "WOOK-GAME-20260812-FILE-SAFE-V25";
+  const BUILD_ID = "WOOK-GAME-20260812-CONTROLS-OUTER-POSITION-V28";
   console.log(`[${BUILD_ID}] loaded`);
 
   const canvas = document.getElementById("gameCanvas");
@@ -16,6 +16,20 @@
 
   const PLAYER_SIZE = 150;
   const POTATO_SIZE = 84;
+
+  // 모바일 조작 UI 크기
+  const JOYSTICK_BASE_SIZE = 146;
+  const JOYSTICK_KNOB_SIZE = 66;
+  const ACTION_BUTTON_SIZE = 98;
+  const ACTION_BUTTON_GAP_ADJUST = 26;
+
+  // 조작 UI 전체 위치를 화면 바깥쪽으로 조금 더 이동
+  const JOYSTICK_OUTER_OFFSET_X = 22;
+  const ACTION_CLUSTER_OUTER_OFFSET_X = 32;
+
+  // 걷는 속도는 그대로 유지하고,
+  // 공중에서 좌우로 움직일 때만 이동량을 늘려 점프 사거리를 넓힘
+  const AIR_MOVE_MULTIPLIER = 1.38;
 
   const WALK_FRAMES = ["wook1", "wook2", "wook3", "wook4"];
   const HARVEST_FRAMES = ["wook5", "wook6", "wook7", "wook8"];
@@ -146,7 +160,7 @@
   const joystick = {
     active: false,
     pointerId: null,
-    maxDistance: 38
+    maxDistance: 46
   };
 
   const tutorial = {
@@ -327,6 +341,47 @@
       height: POTATO_SIZE,
       removed: false
     };
+  }
+
+  function applyMobileControlSizes() {
+    if (joystickBase) {
+      joystickBase.style.setProperty("width", `${JOYSTICK_BASE_SIZE}px`, "important");
+      joystickBase.style.setProperty("height", `${JOYSTICK_BASE_SIZE}px`, "important");
+      joystickBase.style.setProperty("min-width", `${JOYSTICK_BASE_SIZE}px`, "important");
+      joystickBase.style.setProperty("min-height", `${JOYSTICK_BASE_SIZE}px`, "important");
+      joystickBase.style.setProperty("transform", `translateX(-${JOYSTICK_OUTER_OFFSET_X}px)`, "important");
+    }
+
+    if (joystickKnob) {
+      joystickKnob.style.setProperty("width", `${JOYSTICK_KNOB_SIZE}px`, "important");
+      joystickKnob.style.setProperty("height", `${JOYSTICK_KNOB_SIZE}px`, "important");
+    }
+
+    if (jumpBtn) {
+      jumpBtn.style.setProperty("width", `${ACTION_BUTTON_SIZE}px`, "important");
+      jumpBtn.style.setProperty("height", `${ACTION_BUTTON_SIZE}px`, "important");
+      jumpBtn.style.setProperty("min-width", `${ACTION_BUTTON_SIZE}px`, "important");
+      jumpBtn.style.setProperty("min-height", `${ACTION_BUTTON_SIZE}px`, "important");
+      jumpBtn.style.setProperty("font-size", "18px", "important");
+      jumpBtn.style.setProperty(
+        "transform",
+        `translateX(${ACTION_BUTTON_GAP_ADJUST + ACTION_CLUSTER_OUTER_OFFSET_X}px)`,
+        "important"
+      );
+    }
+
+    if (harvestBtn) {
+      harvestBtn.style.setProperty("width", `${ACTION_BUTTON_SIZE}px`, "important");
+      harvestBtn.style.setProperty("height", `${ACTION_BUTTON_SIZE}px`, "important");
+      harvestBtn.style.setProperty("min-width", `${ACTION_BUTTON_SIZE}px`, "important");
+      harvestBtn.style.setProperty("min-height", `${ACTION_BUTTON_SIZE}px`, "important");
+      harvestBtn.style.setProperty("font-size", "18px", "important");
+      harvestBtn.style.setProperty(
+        "transform",
+        `translateX(${ACTION_CLUSTER_OUTER_OFFSET_X - ACTION_BUTTON_GAP_ADJUST}px)`,
+        "important"
+      );
+    }
   }
 
   function resetJoystickVisual() {
@@ -712,7 +767,12 @@
 
     if (direction !== 0) {
       p.facing = direction;
-      p.x += direction * p.speed * dt;
+
+      // 지상에서는 기존 걷기 속도 그대로,
+      // 점프 중에만 수평 이동량을 늘려 더 멀리 점프할 수 있게 함
+      const moveMultiplier = p.onGround ? 1 : AIR_MOVE_MULTIPLIER;
+      p.x += direction * p.speed * moveMultiplier * dt;
+
       p.walkClock += dt * 10;
     }
 
@@ -1873,6 +1933,7 @@
 
   async function bootGame() {
     resetState();
+    applyMobileControlSizes();
     loadImages();
 
     try {
