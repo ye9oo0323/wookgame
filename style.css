@@ -664,21 +664,42 @@ button {
   }
 }
 
-
 /* =========================================================
-   MOBILE IMAGE CONTROLS V18
-   기존 이미지 그대로 사용:
-   - assets/image/mobile_joystick.png
-   - assets/image/mobile_jump.png
-   - assets/image/mobile_harvest.png
-
-   변경:
-   - 오른쪽 이동 시 조이스틱 좌우 반전
-   - 버튼 누를 때 확실하게 눌리는 효과
-   - backdrop blur / box shadow 제거
+   MOBILE IMAGE CONTROLS V23 - GALAXY / iPHONE FIX
+   ---------------------------------------------------------
+   목적
+   - Galaxy Chrome / Samsung Internet에서도 이미지 버튼 표시
+   - iPhone Safari 기존 동작 유지
+   - hover:none 의존 제거
+   - pointer:coarse 또는 any-pointer:coarse면 모바일 컨트롤 활성화
+   - 조이스틱 L/R 이미지를 미리 로드
+   - 뛰기/캐기 버튼은 background + ::before 이중 표시
    ========================================================= */
 
-@media (hover: none) and (pointer: coarse) and (orientation: landscape) {
+/*
+  모바일 조작 이미지 미리 로드.
+  화면에는 보이지 않지만 브라우저가 4개 이미지를 미리 요청하게 합니다.
+*/
+@media
+  (orientation: landscape) and (pointer: coarse),
+  (orientation: landscape) and (any-pointer: coarse) {
+
+  .touch-controls::before {
+    content: "";
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    left: -9999px;
+    top: -9999px;
+    opacity: 0;
+    pointer-events: none;
+
+    background-image:
+      url("assets/image/mobile_joystick_L.png?v=20260812-V23"),
+      url("assets/image/mobile_joystick_R.png?v=20260812-V23"),
+      url("assets/image/mobile_jump.png?v=20260812-V23"),
+      url("assets/image/mobile_harvest.png?v=20260812-V23");
+  }
 
   .touch-controls {
     display: block !important;
@@ -692,14 +713,15 @@ button {
     pointer-events: none !important;
   }
 
+
   /* =======================================================
-     왼쪽 조이스틱
+     JOYSTICK
      ======================================================= */
 
   .joystick-base {
     display: block !important;
     visibility: visible !important;
-    opacity: .95 !important;
+    opacity: .96 !important;
 
     position: absolute !important;
 
@@ -713,32 +735,30 @@ button {
       calc(env(safe-area-inset-bottom) + 10px)
     ) !important;
 
-    width: clamp(
-      88px,
-      16dvh,
-      118px
-    ) !important;
-
-    height: clamp(
-      88px,
-      16dvh,
-      118px
-    ) !important;
+    width: clamp(88px, 16dvh, 118px) !important;
+    height: clamp(88px, 16dvh, 118px) !important;
+    min-width: 88px !important;
+    min-height: 88px !important;
 
     aspect-ratio: 1 / 1 !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
 
     border: 0 !important;
     border-radius: 0 !important;
 
+    /*
+      L 이미지는 본체 background에도 넣습니다.
+      pseudo-element 렌더링이 늦더라도 조이스틱이 사라지지 않습니다.
+    */
     background:
       transparent
-      url("assets/image/mobile_joystick.png")
+      url("assets/image/mobile_joystick_L.png?v=20260812-V23")
       center / contain
       no-repeat !important;
 
     box-shadow: none !important;
-
-    /* 예전에 있던 옆 blur 제거 */
     filter: none !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
@@ -746,39 +766,97 @@ button {
     pointer-events: auto !important;
     touch-action: none !important;
 
-    transform: scaleX(1) !important;
-    transform-origin: center center !important;
+    overflow: visible !important;
+    isolation: isolate !important;
 
-    transition:
-      transform .06s steps(2, end),
-      filter .06s linear !important;
+    -webkit-tap-highlight-color: transparent !important;
   }
 
-  /* 기존 CSS 화살표/노브 그림은 전부 숨김 */
+  /*
+    기존 CSS 화살표를 이미지 레이어로 완전히 교체합니다.
+    ::before = 왼쪽
+    ::after  = 오른쪽
+  */
   .joystick-base::before,
-  .joystick-base::after,
+  .joystick-base::after {
+    content: "" !important;
+    display: block !important;
+
+    position: absolute !important;
+    inset: 0 !important;
+
+    width: 100% !important;
+    height: 100% !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    border: 0 !important;
+    border-radius: 0 !important;
+
+    background-color: transparent !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    background-size: contain !important;
+
+    pointer-events: none !important;
+
+    transform: none !important;
+    box-shadow: none !important;
+
+    will-change: opacity !important;
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
+
+    transition: opacity .04s linear !important;
+  }
+
+  .joystick-base::before {
+    background-image:
+      url("assets/image/mobile_joystick_L.png?v=20260812-V23") !important;
+
+    opacity: 1 !important;
+    z-index: 1 !important;
+  }
+
+  .joystick-base::after {
+    background-image:
+      url("assets/image/mobile_joystick_R.png?v=20260812-V23") !important;
+
+    opacity: 0 !important;
+    z-index: 2 !important;
+  }
+
+  .joystick-base.joy-left::before {
+    opacity: 1 !important;
+  }
+
+  .joystick-base.joy-left::after {
+    opacity: 0 !important;
+  }
+
+  .joystick-base.joy-right::before {
+    opacity: 0 !important;
+  }
+
+  .joystick-base.joy-right::after {
+    opacity: 1 !important;
+  }
+
+  .joystick-base.joy-active {
+    opacity: .92 !important;
+    filter: none !important;
+  }
+
   .joystick-knob {
     display: none !important;
-    content: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
   }
 
-  /* 왼쪽 이동: 원본 방향 */
-  .joystick-base.joy-left {
-    transform: scaleX(1) !important;
-  }
-
-  /* 오른쪽 이동: 이미지 좌우 반전 */
-  .joystick-base.joy-right {
-    transform: scaleX(-1) !important;
-  }
-
-  /* 누르고 있을 때만 아주 살짝 진하게 */
-  .joystick-base.joy-active {
-    filter: brightness(.94) !important;
-  }
 
   /* =======================================================
-     오른쪽 뛰기 / 캐기 버튼
+     ACTION BUTTON AREA
      ======================================================= */
 
   .action-buttons {
@@ -798,36 +876,25 @@ button {
       calc(env(safe-area-inset-bottom) + 10px)
     ) !important;
 
-    gap: clamp(
-      10px,
-      2vw,
-      18px
-    ) !important;
-
+    gap: clamp(10px, 2vw, 18px) !important;
     align-items: flex-end !important;
 
-    pointer-events: none !important;
     z-index: 31 !important;
+
+    pointer-events: none !important;
   }
 
   .game-action-button {
     display: block !important;
     visibility: visible !important;
-    opacity: .96 !important;
+    opacity: .98 !important;
 
     position: relative !important;
 
-    width: clamp(
-      62px,
-      11dvh,
-      80px
-    ) !important;
-
-    height: clamp(
-      62px,
-      11dvh,
-      80px
-    ) !important;
+    width: clamp(62px, 11dvh, 80px) !important;
+    height: clamp(62px, 11dvh, 80px) !important;
+    min-width: 62px !important;
+    min-height: 62px !important;
 
     aspect-ratio: 1 / 1 !important;
 
@@ -835,305 +902,189 @@ button {
     padding: 0 !important;
 
     border: 0 !important;
-    border-radius: 0 !important;
+
+    /*
+      JS에서 border-radius / clip-path를 inline !important로 넣고 있어도
+      이미지 자체는 동일 영역 안에 보이도록 구성합니다.
+    */
+    background-color: transparent !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    background-size: contain !important;
+
+    color: transparent !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+
+    box-shadow: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+
+    pointer-events: auto !important;
+    touch-action: none !important;
+
+    overflow: hidden !important;
+    isolation: isolate !important;
+
+    -webkit-appearance: none !important;
+    appearance: none !important;
+
+    -webkit-tap-highlight-color: transparent !important;
+
+    transform-origin: center center !important;
+
+    transition:
+      transform .055s ease-out,
+      opacity .055s ease-out,
+      filter .055s ease-out !important;
+  }
+
+  /*
+    Samsung Internet에서 button background 렌더링이 꼬이는 경우를 대비해
+    ::before에도 똑같은 이미지를 한 번 더 그립니다.
+  */
+  .game-action-button::before {
+    content: "" !important;
+    display: block !important;
+
+    position: absolute !important;
+    inset: 0 !important;
+
+    width: 100% !important;
+    height: 100% !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
 
     background-color: transparent !important;
     background-position: center !important;
     background-repeat: no-repeat !important;
     background-size: contain !important;
 
-    /* 옆에 보이던 blur / 그림자 제거 */
-    box-shadow: none !important;
-    filter: none !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
+    pointer-events: none !important;
 
-    color: transparent !important;
+    z-index: 1 !important;
 
-    pointer-events: auto !important;
-    touch-action: manipulation !important;
-
-    transform: translateY(0) scale(1) !important;
-    transform-origin: center center !important;
-
-    transition:
-      transform .055s ease-out,
-      filter .055s ease-out,
-      opacity .055s ease-out !important;
+    opacity: 1 !important;
   }
+
+  .game-action-button::after {
+    content: none !important;
+    display: none !important;
+  }
+
+
+  /* =======================================================
+     JUMP
+     ======================================================= */
 
   .jump-button {
     background-image:
-      url("assets/image/mobile_jump.png") !important;
-
-    /* 원래 jump-button의 -24% 이동 제거 */
-    transform: translateY(0) scale(1) !important;
+      url("assets/image/mobile_jump.png?v=20260812-V23") !important;
   }
+
+  .jump-button::before {
+    background-image:
+      url("assets/image/mobile_jump.png?v=20260812-V23") !important;
+  }
+
+
+  /* =======================================================
+     HARVEST
+     ======================================================= */
 
   .harvest-button {
     background-image:
-      url("assets/image/mobile_harvest.png") !important;
+      url("assets/image/mobile_harvest.png?v=20260812-V23") !important;
   }
 
-  /* 이미지 자체를 쓰므로 기존 글자 / CSS 아이콘 제거 */
-  .game-action-button span,
-  .jump-button::before,
-  .jump-button::after,
-  .harvest-button::before,
-  .harvest-button::after {
+  .harvest-button::before {
+    background-image:
+      url("assets/image/mobile_harvest.png?v=20260812-V23") !important;
+  }
+
+
+  /* HTML에 남아 있는 뛰기/캐기 글자는 숨깁니다. */
+  .game-action-button > span {
     display: none !important;
-    content: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
   }
 
-  /*
-    눌렀을 때 눈에 확실히 보이게:
-    - 아래로 5px
-    - 88%로 축소
-    - 살짝 어두워짐
-  */
-  .game-action-button:active,
-  .game-action-button.pressed,
-  .jump-button:active,
-  .jump-button.pressed,
-  .harvest-button:active,
-  .harvest-button.pressed {
-    transform:
-      translateY(5px)
-      scale(.88) !important;
 
+  /* =======================================================
+     PRESSED EFFECT
+     ======================================================= */
+
+  .game-action-button:active,
+  .game-action-button.pressed {
     filter:
-      brightness(.72)
-      saturate(.90) !important;
+      brightness(.74)
+      saturate(.92) !important;
 
     opacity: .92 !important;
+  }
 
-    box-shadow: none !important;
+  .game-action-button:active::before,
+  .game-action-button.pressed::before {
+    opacity: .94 !important;
   }
 }
 
 
 /* =========================================================
-   MOBILE JOYSTICK L/R IMAGE V19
-   필요한 파일:
-   - assets/image/mobile_joystick_L.png
-   - assets/image/mobile_joystick_R.png
+   Galaxy / Android landscape fallback
+   ---------------------------------------------------------
+   일부 Android WebView / Samsung Internet에서
+   pointer 관련 media feature가 비정상 판정되는 상황을 위한 보조 규칙.
 
-   코드에서 좌우반전하지 않고 이미지 자체를 교체합니다.
+   아래 조건은 작은 가로 화면에만 적용해서 일반 PC 노출을 최대한 피합니다.
    ========================================================= */
 
-@media (hover: none) and (pointer: coarse) and (orientation: landscape) {
+@media
+  (orientation: landscape)
+  and (max-width: 1000px)
+  and (max-height: 600px) {
 
-  .joystick-base {
-    /* 기본 상태는 L 이미지 */
-    background-image:
-      url("assets/image/mobile_joystick_L.png") !important;
-
-    background-position: center !important;
-    background-repeat: no-repeat !important;
-    background-size: contain !important;
-
-    /* 좌우반전 애니메이션 완전 제거 */
-    transform: none !important;
-    transition:
-      filter .05s linear,
-      opacity .05s linear !important;
-
-    box-shadow: none !important;
-    filter: none !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
+  .touch-controls {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
 
-  .joystick-base.joy-left {
-    background-image:
-      url("assets/image/mobile_joystick_L.png") !important;
+  .joystick-base,
+  .action-buttons,
+  .game-action-button {
+    visibility: visible !important;
+    opacity: .96 !important;
+  }
 
-    transform: none !important;
+  .joystick-base {
+    background:
+      transparent
+      url("assets/image/mobile_joystick_L.png?v=20260812-V23")
+      center / contain
+      no-repeat !important;
   }
 
   .joystick-base.joy-right {
-    background-image:
-      url("assets/image/mobile_joystick_R.png") !important;
-
-    transform: none !important;
-  }
-
-  .joystick-base.joy-active {
-    filter: brightness(.94) !important;
-  }
-}
-
-
-/* =========================================================
-   MOBILE JOYSTICK SMOOTH V21
-   - L/R 이미지를 둘 다 미리 올려둠
-   - background-image 교체 없이 opacity만 전환
-   - 모바일 오른쪽 이동 버벅임 최소화
-   ========================================================= */
-
-@media (hover: none) and (pointer: coarse) and (orientation: landscape) {
-
-  .joystick-base {
-    background: none !important;
-    transform: none !important;
-    filter: none !important;
-
-    contain: layout paint style !important;
-    isolation: isolate !important;
-
-    transition: opacity .04s linear !important;
-    overflow: visible !important;
-  }
-
-  .joystick-base::before,
-  .joystick-base::after {
-    content: "" !important;
-    display: block !important;
-
-    position: absolute !important;
-    inset: 0 !important;
-
-    width: 100% !important;
-    height: 100% !important;
-
-    border: 0 !important;
-
-    background-position: center !important;
-    background-repeat: no-repeat !important;
-    background-size: contain !important;
-
-    transform: none !important;
-    pointer-events: none !important;
-
-    will-change: opacity !important;
-    backface-visibility: hidden !important;
-  }
-
-  /* 왼쪽 이미지 레이어 */
-  .joystick-base::before {
-    background-image:
-      url("assets/image/mobile_joystick_L.png") !important;
-
-    opacity: 1 !important;
-  }
-
-  /* 오른쪽 이미지 레이어 */
-  .joystick-base::after {
-    background-image:
-      url("assets/image/mobile_joystick_R.png") !important;
-
-    opacity: 0 !important;
-  }
-
-  .joystick-base.joy-left::before {
-    opacity: 1 !important;
-  }
-
-  .joystick-base.joy-left::after {
-    opacity: 0 !important;
-  }
-
-  .joystick-base.joy-right::before {
-    opacity: 0 !important;
-  }
-
-  .joystick-base.joy-right::after {
-    opacity: 1 !important;
-  }
-
-  /* 이동 중 filter 사용 안 함 */
-  .joystick-base.joy-active {
-    filter: none !important;
-    opacity: .95 !important;
-  }
-
-  .joystick-knob {
-    display: none !important;
-  }
-}
-
-
-/* =========================================================
-   MOBILE JOYSTICK FAILSAFE V22
-   - L 이미지는 항상 기본 배경으로 유지
-   - R 이미지는 오른쪽 이동 시 위에 덮기
-   - R 이미지가 늦게 로드되거나 실패해도 조이스틱이 사라지지 않음
-   ========================================================= */
-
-@media (hover: none) and (pointer: coarse) and (orientation: landscape) {
-
-  .joystick-base {
     background:
       transparent
-      url("assets/image/mobile_joystick_L.png")
+      url("assets/image/mobile_joystick_R.png?v=20260812-V23")
       center / contain
       no-repeat !important;
-
-    transform: none !important;
-    filter: none !important;
-
-    contain: layout paint style !important;
-    isolation: isolate !important;
-
-    overflow: visible !important;
   }
 
-  /* 기존 ::before 레이어는 완전히 제거 */
-  .joystick-base::before {
-    content: none !important;
-    display: none !important;
+  .jump-button,
+  .jump-button::before {
+    background-image:
+      url("assets/image/mobile_jump.png?v=20260812-V23") !important;
   }
 
-  /*
-    오른쪽 이미지는 위에 한 장만 덮습니다.
-    기본 L 이미지는 절대 숨기지 않습니다.
-  */
-  .joystick-base::after {
-    content: "" !important;
-    display: block !important;
-
-    position: absolute !important;
-    inset: 0 !important;
-
-    width: 100% !important;
-    height: 100% !important;
-
-    border: 0 !important;
-
-    background:
-      transparent
-      url("assets/image/mobile_joystick_R.png")
-      center / contain
-      no-repeat !important;
-
-    opacity: 0 !important;
-
-    transform: none !important;
-
-    pointer-events: none !important;
-
-    will-change: opacity !important;
-    backface-visibility: hidden !important;
-
-    transition: none !important;
-  }
-
-  /* 왼쪽 = 기본 L만 보임 */
-  .joystick-base.joy-left::after {
-    opacity: 0 !important;
-  }
-
-  /* 오른쪽 = L 위에 R을 덮음 */
-  .joystick-base.joy-right::after {
-    opacity: 1 !important;
-  }
-
-  .joystick-base.joy-active {
-    filter: none !important;
-    opacity: .95 !important;
-  }
-
-  .joystick-knob {
-    display: none !important;
+  .harvest-button,
+  .harvest-button::before {
+    background-image:
+      url("assets/image/mobile_harvest.png?v=20260812-V23") !important;
   }
 }
