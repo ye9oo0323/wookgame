@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const BUILD_ID = "WOOK-GAME-20260812-ACTION-SPACING-RESTORED-V30";
+  const BUILD_ID = "WOOK-GAME-20260812-MOBILE-BGM-UNLOCK-V31";
   console.log(`[${BUILD_ID}] loaded`);
 
   const canvas = document.getElementById("gameCanvas");
@@ -144,8 +144,27 @@
   const backgroundSound = new Audio("assets/sound/backsound.mp3");
   backgroundSound.preload = "auto";
   backgroundSound.loop = true;
+  backgroundSound.setAttribute("playsinline", "");
+  backgroundSound.setAttribute("webkit-playsinline", "");
+
   const BACKGROUND_VOLUME = 0.28;
   backgroundSound.volume = BACKGROUND_VOLUME;
+
+  backgroundSound.addEventListener("canplay", () => {
+    console.log(`[${BUILD_ID}] 배경음 canplay`);
+  });
+
+  backgroundSound.addEventListener("playing", () => {
+    console.log(`[${BUILD_ID}] 배경음 playing`);
+  });
+
+  backgroundSound.addEventListener("error", () => {
+    console.error(`[${BUILD_ID}] 배경음 파일 로드 오류`, {
+      src: backgroundSound.currentSrc || backgroundSound.src,
+      code: backgroundSound.error?.code ?? null,
+      message: backgroundSound.error?.message ?? ""
+    });
+  });
 
   let gameRunning = false;
   let lastFrameTime = performance.now();
@@ -480,11 +499,57 @@
   function playBackgroundSound({ restart = false } = {}) {
     try {
       backgroundSound.volume = BACKGROUND_VOLUME;
-      if (restart) backgroundSound.currentTime = 0;
-      backgroundSound.play().catch(() => {
-      });
+
+      if (restart) {
+        try {
+          backgroundSound.currentTime = 0;
+        } catch (error) {
+          console.warn(`[${BUILD_ID}] 배경음 currentTime 초기화 실패`, error);
+        }
+      }
+
+      const playPromise = backgroundSound.play();
+
+      if (playPromise && typeof playPromise.catch === "function") {
+        playPromise.catch((error) => {
+          console.error(`[${BUILD_ID}] 배경음 play() 실패`, error);
+          console.error(`[${BUILD_ID}] 배경음 상태`, {
+            src: backgroundSound.currentSrc || backgroundSound.src,
+            networkState: backgroundSound.networkState,
+            readyState: backgroundSound.readyState,
+            paused: backgroundSound.paused,
+            muted: backgroundSound.muted,
+            volume: backgroundSound.volume
+          });
+        });
+      }
     } catch (error) {
-      console.warn(`[${BUILD_ID}] 배경음 재생 실패`, error);
+      console.error(`[${BUILD_ID}] 배경음 재생 처리 실패`, error);
+    }
+  }
+
+  function unlockBackgroundSoundFromUserGesture() {
+    try {
+      backgroundSound.volume = BACKGROUND_VOLUME;
+      backgroundSound.muted = false;
+
+      if (backgroundSound.readyState === 0) {
+        backgroundSound.load();
+      }
+
+      const playPromise = backgroundSound.play();
+
+      if (playPromise && typeof playPromise.then === "function") {
+        playPromise
+          .then(() => {
+            console.log(`[${BUILD_ID}] 모바일 배경음 unlock 성공`);
+          })
+          .catch((error) => {
+            console.error(`[${BUILD_ID}] 모바일 배경음 unlock 실패`, error);
+          });
+      }
+    } catch (error) {
+      console.error(`[${BUILD_ID}] 모바일 배경음 unlock 처리 실패`, error);
     }
   }
 
@@ -502,7 +567,15 @@
     successOverlay.classList.remove("show");
     failOverlay.classList.remove("show");
     gameRunning = true;
-    playBackgroundSound({ restart: true });
+
+    // 모바일에서는 pointerdown 단계에서 먼저 오디오를 unlock한다.
+    // 혹시 아직 재생되지 않았다면 여기서 한 번 더 시도한다.
+    if (backgroundSound.paused) {
+      playBackgroundSound({ restart: true });
+    } else {
+      backgroundSound.volume = BACKGROUND_VOLUME;
+    }
+
     lastFrameTime = performance.now();
     render();
     requestAnimationFrame(gameLoop);
@@ -1952,14 +2025,28 @@
   bindActionButton(jumpBtn, jump);
   bindActionButton(harvestBtn, harvest);
 
+  const restartSuccessBtn = document.getElementById("restartSuccessBtn");
+  const restartFailBtn = document.getElementById("restartFailBtn");
+  const successLinkBtn = document.getElementById("successLinkBtn");
+
+  // 모바일 브라우저의 autoplay 제한을 피하기 위해,
+  // 실제 손가락이 버튼에 닿는 pointerdown 순간에 배경음을 먼저 unlock한다.
+  [startBtn, restartSuccessBtn, restartFailBtn].forEach((button) => {
+    button?.addEventListener(
+      "pointerdown",
+      unlockBackgroundSoundFromUserGesture,
+      { passive: true }
+    );
+  });
+
   startBtn.addEventListener("click", startGame);
   howToBtn.addEventListener("click", openTutorial);
   replayTutorialBtn?.addEventListener("click", startTutorialDemo);
   closeHowToBtn.addEventListener("click", closeTutorial);
 
-  document.getElementById("restartSuccessBtn").addEventListener("click", startGame);
-  document.getElementById("restartFailBtn").addEventListener("click", startGame);
-  document.getElementById("successLinkBtn").addEventListener("click", () => {
+  restartSuccessBtn?.addEventListener("click", startGame);
+  restartFailBtn?.addEventListener("click", startGame);
+  successLinkBtn?.addEventListener("click", () => {
     window.open(SUCCESS_LINK, "_blank", "noopener");
   });
 
