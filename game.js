@@ -14,13 +14,9 @@
   const MAX_LIVES = 3;
   const REQUIRED_POTATOES = 6;
 
-  // 이전보다 전체 오브젝트를 조금 더 크게 표시한다.
   const PLAYER_SIZE = 150;
   const POTATO_SIZE = 84;
 
-  // wook1~4: 걷기/정지/점프
-  // wook5~8: 캐기 -  낫 동작
-  // wook9: 웃는 표정
   const WALK_FRAMES = ["wook1", "wook2", "wook3", "wook4"];
   const HARVEST_FRAMES = ["wook5", "wook6", "wook7", "wook8"];
   const SUCCESS_FRAME = "wook9";
@@ -29,24 +25,16 @@
     frame: { x: 18, y: 14, w: 1244, h: 692 },
     stage: { x: 30, y: 26, w: 1220, h: 668 },
 
-    // 왼쪽 상단 HUD
     hud: { x: 46, y: 38 },
 
-    // 상태 알림은 HUD와 겹치지 않도록 오른쪽 상단
     toast: { x: 390, y: 150, w: 500, h: 96 },
 
-    // 진행바는 프레임과 fill을 정확히 맞추기 위해 약간 넓게 사용
     progress: { x: 238, y: 610, w: 804, h: 70 }
   };
 
-  // 새 UI PNG는 파일마다 투명 여백의 크기가 달라도 사용할 수 있습니다.
-  // 로드할 때 불투명한 실제 그림 영역을 자동으로 찾아 패널이 눌리거나
-  // 아이콘이 작아지는 현상을 막습니다.
   const AUTO_CROP_KEYS = new Set([
     "hudPanel",
 
-    // 새로 만든 단독 PNG들은 캔버스 안에 투명 여백이 들어갈 수 있습니다.
-    // 실제 그림 영역만 잘라서 사용해야 가로/세로가 눌리지 않습니다.
     "heartOn",
     "heartOff",
     "iconClock",
@@ -61,20 +49,15 @@
   ]);
   const imageOpaqueBounds = {};
 
-  // 배경의 초록 들판을 더 오래 보이게 하고 갈색 흙은 화면 아래쪽에만 둔다.
   const FIELD_TOP_Y = 456;
-  // 배경의 나무/집 아랫부분이 게임 지면에 잘린 듯 보이지 않도록 살짝 올립니다.
   const BACKGROUND_Y_OFFSET = 0;
   const STAGE_GROUND_Y = 513;
   const PLAYER_GROUND_SINK = 10;
   const POTATO_BURY_DEPTH = 26;
-  // 감자 폭(84px)보다 살짝만 넓게 보여 구덩이가 캐릭터를 압도하지 않게 한다.
   const HOLE_WIDTH = 104;
   const HOLE_HEIGHT = 34;
   const HOLE_TOP_OFFSET = 9;
   const HOLE_FRONT_RATIO = 0.72;
-  // 앞 흙턱 아래로 감자의 발이 삐져나오지 않도록 보이는 범위를 제한한다.
-  // 구덩이의 크기와 감자가 묻힌 깊이는 그대로 유지한다.
   const POTATO_VISIBLE_BOTTOM_OFFSET = 11;
   const TUTORIAL_POTATO_VISIBLE_BOTTOM_OFFSET = 8;
   const VISIBLE_WORLD_WIDTH = UI.stage.w - 110;
@@ -101,8 +84,6 @@
 
   const images = {};
 
-  // 모바일 조이스틱 L/R 이미지를 미리 캐시에 올려둡니다.
-  // 오른쪽으로 처음 움직일 때 파일 로딩 때문에 끊기는 현상을 줄입니다.
   const mobileJoystickPreload = [];
 
   [
@@ -131,7 +112,6 @@
     groundPixel: "assets/image/ground_pixel.png",
     holePixel: "assets/image/hole_pixel.png",
 
-    // 시간 / 가방 / 목숨 HUD가 모두 같은 공용 박스 이미지를 사용합니다.
     hudPanel: "assets/image/hud_panel.png",
     heartOn: "assets/image/heart_on.png",
     heartOff: "assets/image/heart_off.png",
@@ -144,11 +124,9 @@
     toastRed: "assets/image/toast_red.png"
   };
 
-  // 게임 설명 사운드입니다.
   const tutorialSound = new Audio("assets/sound/tutorial.mp3");
   tutorialSound.preload = "auto";
 
-  // 배경음악: 게임 시작 시 반복 재생
   const backgroundSound = new Audio("assets/sound/backsound.m4A");
   backgroundSound.preload = "auto";
   backgroundSound.loop = true;
@@ -223,14 +201,6 @@
       h: img.naturalHeight || img.height || 1
     };
 
-    /*
-      file:// 로 index.html을 직접 열었을 때는
-      브라우저 보안 정책 때문에 로컬 이미지를 Canvas에 그린 뒤
-      getImageData()로 픽셀을 읽는 작업이 차단될 수 있습니다.
-
-      따라서 file:// 환경에서는 픽셀 분석 자체를 하지 않고
-      이미지 전체 영역을 그대로 사용합니다.
-    */
     if (window.location.protocol === "file:") {
       return fallbackBounds;
     }
@@ -426,7 +396,6 @@
       moving: false
     };
 
-    // 감자들이 연속으로 몰리지 않도록 간격을 넓혀 배치한다.
     state.potatoes = [
       makePotato("normal", 650),
       makePotato("toxic", 1070),
@@ -448,7 +417,6 @@
       backgroundSound.volume = BACKGROUND_VOLUME;
       if (restart) backgroundSound.currentTime = 0;
       backgroundSound.play().catch(() => {
-        // 브라우저 자동재생 정책으로 막힌 경우 다음 사용자 입력 때 다시 재생됩니다.
       });
     } catch (error) {
       console.warn(`[${BUILD_ID}] 배경음 재생 실패`, error);
@@ -528,7 +496,6 @@
     if (!gameRunning || state.gameOverDelay > 0 || !p) return;
     if (p.harvestCooldown > 0 || p.harvestTime > 0 || p.successPoseTime > 0) return;
 
-    // 이 함수가 호출되는 순간에만 wook5~8 낫 모션이 시작된다.
     p.harvestTime = p.harvestDuration;
     p.harvestCooldown = 0.56;
     p.successPoseQueued = false;
@@ -651,8 +618,6 @@
     const p = state.player;
     if (!p || p.invincibleTime > 0) return;
 
-    // 이전 위치부터 현재 위치까지의 이동 구간 전체로 검사한다.
-    // 따라서 감자를 향해 그냥 일자로 달리면 반드시 충돌한다.
     const playerBody = makeSweptBody(previousX, previousY);
 
     for (const potato of state.potatoes) {
@@ -669,7 +634,6 @@
           : "욱감자에 부딪혔어요!"
       );
 
-      // 한 프레임에 여러 감자가 동시에 처리되지 않도록 종료한다.
       return;
     }
   }
@@ -686,8 +650,6 @@
     const p = state.player;
     const waitingForGameOver = state.gameOverDelay > 0;
 
-    // 마지막 목숨이 닳은 뒤에는 원인을 볼 수 있도록 2초간 게임오버를 늦춘다.
-    // 이 시간에는 제한 시간과 조작을 멈추고, 맞은 효과와 토스트만 계속 보여준다.
     if (!waitingForGameOver) {
       state.timeLeft -= dt;
       goalToastCooldown = Math.max(0, goalToastCooldown - dt);
@@ -722,7 +684,6 @@
       state.gameOverDelay = Math.max(0, state.gameOverDelay - dt);
       p.moving = false;
 
-      // 공중에서 마지막 목숨을 잃었다면 자연스럽게 바닥까지 떨어지게 한다.
       p.vy += p.gravity * dt;
       p.y += p.vy * dt;
       const floorY = STAGE_GROUND_Y - p.height + PLAYER_GROUND_SINK;
@@ -806,8 +767,6 @@
     ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
   }
 
-  // PNG의 실제 그림 영역 비율을 그대로 유지해서 지정 박스 안에 넣습니다.
-  // 하트처럼 원본 캔버스 비율이 제각각이어도 찌그러지지 않습니다.
   function drawAutoCroppedContain(key, x, y, maxW, maxH, alignX = 0.5, alignY = 0.5) {
     if (!imageReady(key) || maxW <= 0 || maxH <= 0) {
       return { x, y, w: 0, h: 0 };
@@ -831,8 +790,6 @@
     return { x: dx, y: dy, w, h };
   }
 
-  // 장식이 많은 긴 UI의 좌우 부분이 가운데 스트레칭 영역에 섞이지 않도록
-  // 이미지별로 보호할 좌우 캡 비율을 다르게 둡니다.
   function getHorizontalCapRatio(key) {
     if (key === "toastGreen" || key === "toastYellow" || key === "toastRed") return 0.24;
     if (key === "progressBg") return 0.18;
@@ -841,7 +798,6 @@
     return 0.12;
   }
 
-  // 가로로 긴 UI 이미지는 좌우 장식이 찌그러지지 않도록 3-slice로 그립니다.
   function drawHorizontal3Slice(key, crop, x, y, w, h) {
     if (!imageReady(key) || !crop || w <= 0 || h <= 0) return;
 
@@ -886,17 +842,14 @@
   function getHeroImageKey() {
     const p = state.player;
 
-    // wook9는 정상 욱감자 수확 성공 직후에만 나온다.
     if (p.successPoseTime > 0) return SUCCESS_FRAME;
 
-    // 낫 모션은 Ctrl 또는 캐기 버튼을 눌러 harvest()가 실행됐을 때만 나온다.
     if (p.harvestTime > 0) {
       const elapsed = p.harvestDuration - p.harvestTime;
       const progress = Math.max(0, Math.min(0.9999, elapsed / p.harvestDuration));
       return HARVEST_FRAMES[Math.floor(progress * HARVEST_FRAMES.length)];
     }
 
-    // 이동·정지·점프에서는 절대로 wook5~8을 사용하지 않는다.
     if (!p.onGround) return WALK_FRAMES[1];
     if (!p.moving) return WALK_FRAMES[0];
 
@@ -924,8 +877,6 @@
   }
 
   function drawField(box) {
-    // 요청에 따라 별도의 땅 픽셀 스트립은 그리지 않습니다.
-    // 캐릭터와 감자는 배경 위를 그대로 달리도록 연출합니다.
   }
 
   function getHoleRect(cx, ground) {
@@ -937,7 +888,6 @@
     };
   }
 
-  // 먼저 전체 구덩이를 그려 어두운 안쪽과 뒤 테두리가 감자 뒤로 보이게 합니다.
   function drawHoleBase(cx, ground) {
     const rect = getHoleRect(cx, ground);
 
@@ -959,7 +909,6 @@
     ctx.fill();
   }
 
-  // 같은 이미지의 아래쪽만 한 번 더 그려 감자의 아랫부분을 앞 흙턱이 덮게 합니다.
   function drawHoleFront(cx, ground) {
     if (!imageReady("holePixel")) {
       ctx.fillStyle = "#a36839";
@@ -986,8 +935,6 @@
     );
   }
 
-  // 감자 이미지는 앞 흙턱이 실제로 덮을 수 있는 높이까지만 그립니다.
-  // 그 뒤 앞 흙턱을 다시 그리면 발이나 이미지 하단이 구덩이 밖으로 나오지 않습니다.
   function drawBuriedPotato(key, x, y, width, height, ground) {
     const visibleBottom = Math.min(
       y + height,
@@ -1048,7 +995,6 @@
       getHorizontalCapRatio("hudPanel")
     );
 
-    // 시간
     drawHorizontal3Slice(
       "hudPanel",
       panelCrop,
@@ -1076,7 +1022,6 @@
       y + panelH / 2 + 1
     );
 
-    // 가방
     drawHorizontal3Slice(
       "hudPanel",
       panelCrop,
@@ -1100,7 +1045,6 @@
       y + panelH / 2 + 1
     );
 
-    // 하트
     drawHorizontal3Slice(
       "hudPanel",
       panelCrop,
@@ -1160,9 +1104,8 @@
       h
     );
 
-    // progress_bg의 크림색 중앙 영역에 맞춰 고정합니다.
     const trackX = x + 44;
-    const trackY = y + 28;
+    const trackY = y + 33;
     const trackW = w - 88;
     const trackH = 20;
 
@@ -1172,7 +1115,7 @@
     );
 
     if (fillW > 0) {
-      // 외곽 진한 초록
+
       ctx.fillStyle = "#245f32";
       ctx.fillRect(
         trackX,
@@ -1181,7 +1124,6 @@
         trackH
       );
 
-      // 본체
       if (fillW > 4) {
         ctx.fillStyle = "#65c84e";
         ctx.fillRect(
@@ -1192,7 +1134,6 @@
         );
       }
 
-      // 윗부분 하이라이트
       if (fillW > 8) {
         ctx.fillStyle = "#b9ef65";
         ctx.fillRect(
@@ -1204,7 +1145,6 @@
       }
     }
 
-    // 캐릭터 위치 마커
     const markerX =
       trackX + trackW * progress;
 
@@ -1253,11 +1193,6 @@
         Math.min(appear, disappear)
       );
 
-    /*
-      상태 알림은 항상 캔버스 정중앙 기준.
-      x=390, w=500 이므로 정확히 중앙(640)에 옵니다.
-      y=150으로 내려 HUD와 겹치지 않게 합니다.
-    */
     const x = 390;
     const y = 150;
     const w = 500;
@@ -1297,7 +1232,7 @@
     );
 
     ctx.fillStyle = "#493428";
-    ctx.font = `800 13px ${PIXEL_FONT}`;
+    ctx.font = `800 18px ${PIXEL_FONT}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
@@ -1309,13 +1244,13 @@
 
     const startY =
       y + h / 2 -
-      ((lines.length - 1) * 17) / 2;
+      ((lines.length - 1) * 23) / 2;
 
     lines.forEach((line, index) => {
       ctx.fillText(
         line,
         x + w / 2 - 10,
-        startY + index * 17
+        startY + index * 23
       );
     });
 
@@ -1325,7 +1260,7 @@
           ? "#c85252"
           : "#5f8f36";
 
-      ctx.font = `900 19px ${PIXEL_FONT}`;
+      ctx.font = `900 22px ${PIXEL_FONT}`;
 
       ctx.fillText(
         toast.score,
@@ -1364,7 +1299,6 @@
     const ground = box.y + STAGE_GROUND_Y;
     drawField(box);
 
-    // 이미 캔 자리의 빈 구덩이는 캐릭터보다 뒤에 놓입니다.
     drawHoles(box, ground);
 
     for (const potato of state.potatoes) {
@@ -1445,7 +1379,7 @@
 
   function getTutorialScene(time) {
     const playerSize = 108;
-    const groundY = 215; // background 잔디선에 맞춤
+    const groundY = 215;
     let x = 56;
     let y = groundY - playerSize;
     let key = WALK_FRAMES[0];
@@ -1528,8 +1462,7 @@
   }
 
   function getTutorialHoleRect(centerX, groundY) {
-    // 메인 게임 구덩이 비율을 62px 감자 크기에 맞춰 축소한 값입니다.
-    // 구덩이가 감자 아래에서 떨어져 보이지 않도록 지면 바로 아래에 붙입니다.
+
     const width = 80;
     const height = 26;
 
@@ -1596,8 +1529,7 @@
   }
 
   function drawTutorialGround(width, height, groundY) {
-    // 별도의 ground_pixel 이미지는 사용하지 않습니다.
-    // 메인 게임과 동일하게 background 이미지 안의 잔디/흙을 그대로 사용합니다.
+
   }
 
   function renderTutorial(time = 0) {
@@ -1811,10 +1743,6 @@
       "joy-active"
     );
 
-    /*
-      중앙 deadzone에서는 마지막 방향 이미지를 그대로 유지.
-      좌/우가 실제로 바뀔 때만 DOM class를 변경합니다.
-    */
     if (direction === 0) {
       return;
     }
@@ -1915,7 +1843,6 @@
   window.addEventListener("blur", resetInput);
   canvas.addEventListener("contextmenu", (event) => event.preventDefault());
 
-  // 실제 반영 여부와 충돌/모션 상태를 개발자 콘솔에서 확인할 수 있다.
   window.__wookGameDebug = {
     build: BUILD_ID,
     getState: () => ({
@@ -1959,5 +1886,7 @@
 
     render();
     renderTutorial(0);
-  } bootGame();
+  }
+
+  bootGame();
 })();
