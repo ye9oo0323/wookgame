@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const BUILD_ID = "WOOK-GAME-20260812-CONTROLS-OUTER-POSITION-V28";
+  const BUILD_ID = "WOOK-GAME-20260812-ACTION-HITBOX-FIX-V29";
   console.log(`[${BUILD_ID}] loaded`);
 
   const canvas = document.getElementById("gameCanvas");
@@ -363,6 +363,11 @@
       jumpBtn.style.setProperty("min-width", `${ACTION_BUTTON_SIZE}px`, "important");
       jumpBtn.style.setProperty("min-height", `${ACTION_BUTTON_SIZE}px`, "important");
       jumpBtn.style.setProperty("font-size", "18px", "important");
+      jumpBtn.style.setProperty("padding", "0", "important");
+      jumpBtn.style.setProperty("box-sizing", "border-box", "important");
+      jumpBtn.style.setProperty("border-radius", "50%", "important");
+      jumpBtn.style.setProperty("clip-path", "circle(50% at 50% 50%)", "important");
+      jumpBtn.style.setProperty("touch-action", "none", "important");
       jumpBtn.style.setProperty(
         "transform",
         `translateX(${ACTION_BUTTON_GAP_ADJUST + ACTION_CLUSTER_OUTER_OFFSET_X}px)`,
@@ -376,6 +381,11 @@
       harvestBtn.style.setProperty("min-width", `${ACTION_BUTTON_SIZE}px`, "important");
       harvestBtn.style.setProperty("min-height", `${ACTION_BUTTON_SIZE}px`, "important");
       harvestBtn.style.setProperty("font-size", "18px", "important");
+      harvestBtn.style.setProperty("padding", "0", "important");
+      harvestBtn.style.setProperty("box-sizing", "border-box", "important");
+      harvestBtn.style.setProperty("border-radius", "50%", "important");
+      harvestBtn.style.setProperty("clip-path", "circle(50% at 50% 50%)", "important");
+      harvestBtn.style.setProperty("touch-action", "none", "important");
       harvestBtn.style.setProperty(
         "transform",
         `translateX(${ACTION_CLUSTER_OUTER_OFFSET_X - ACTION_BUTTON_GAP_ADJUST}px)`,
@@ -1743,24 +1753,93 @@
     if (button) button.classList.toggle("pressed", pressed);
   }
 
+  function getActionButtonDistance(button, clientX, clientY) {
+    if (!button) return Number.POSITIVE_INFINITY;
+
+    const rect = button.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+
+    return Math.hypot(
+      clientX - centerX,
+      clientY - centerY
+    );
+  }
+
+  function getNearestActionButton(clientX, clientY) {
+    const jumpDistance =
+      getActionButtonDistance(
+        jumpBtn,
+        clientX,
+        clientY
+      );
+
+    const harvestDistance =
+      getActionButtonDistance(
+        harvestBtn,
+        clientX,
+        clientY
+      );
+
+    return jumpDistance <= harvestDistance
+      ? jumpBtn
+      : harvestBtn;
+  }
+
+  function releaseActionButtons() {
+    setButtonPressed(jumpBtn, false);
+    setButtonPressed(harvestBtn, false);
+  }
+
   function bindActionButton(button, action) {
     if (!button) return;
 
     button.addEventListener("pointerdown", (event) => {
       event.preventDefault();
-      button.setPointerCapture?.(event.pointerId);
-      setButtonPressed(button, true);
-      action();
+
+      const nearestButton =
+        getNearestActionButton(
+          event.clientX,
+          event.clientY
+        );
+
+      releaseActionButtons();
+      setButtonPressed(nearestButton, true);
+
+      nearestButton?.setPointerCapture?.(
+        event.pointerId
+      );
+
+      if (nearestButton === jumpBtn) {
+        jump();
+      }
+      else if (nearestButton === harvestBtn) {
+        harvest();
+      }
+      else {
+        action();
+      }
     });
 
     const release = (event) => {
       event.preventDefault();
-      setButtonPressed(button, false);
+      releaseActionButtons();
     };
 
-    button.addEventListener("pointerup", release);
-    button.addEventListener("pointercancel", release);
-    button.addEventListener("lostpointercapture", () => setButtonPressed(button, false));
+    button.addEventListener(
+      "pointerup",
+      release
+    );
+
+    button.addEventListener(
+      "pointercancel",
+      release
+    );
+
+    button.addEventListener(
+      "lostpointercapture",
+      releaseActionButtons
+    );
   }
 
   function updateJoystick(clientX) {
