@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const BUILD_ID = "WOOK-GAME-20260812-ACTION-HITBOX-FIX-V29";
+  const BUILD_ID = "WOOK-GAME-20260812-ACTION-SPACING-RESTORED-V30";
   console.log(`[${BUILD_ID}] loaded`);
 
   const canvas = document.getElementById("gameCanvas");
@@ -21,7 +21,7 @@
   const JOYSTICK_BASE_SIZE = 146;
   const JOYSTICK_KNOB_SIZE = 66;
   const ACTION_BUTTON_SIZE = 98;
-  const ACTION_BUTTON_GAP_ADJUST = 26;
+  const ACTION_BUTTON_GAP_ADJUST = 0;
 
   // 조작 UI 전체 위치를 화면 바깥쪽으로 조금 더 이동
   const JOYSTICK_OUTER_OFFSET_X = 22;
