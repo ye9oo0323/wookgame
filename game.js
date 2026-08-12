@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const BUILD_ID = "WOOK-GAME-20260812-MOBILE-BGM-UNLOCK-V31";
+  const BUILD_ID = "WOOK-GAME-20260812-GALAXY-DOM-IMAGE-V32";
   console.log(`[${BUILD_ID}] loaded`);
 
   const canvas = document.getElementById("gameCanvas");
@@ -96,6 +96,206 @@
   const joystickBase = document.getElementById("joystickBase");
   const joystickKnob = document.getElementById("joystickKnob");
 
+  /* =========================================================
+     GALAXY / SAMSUNG INTERNET MOBILE CONTROL IMAGE FIX V32
+     ---------------------------------------------------------
+     CSS background-image에만 의존하지 않고 실제 <img> DOM을 넣습니다.
+     파일명이 이전 버전과 달라도 후보 경로를 순서대로 자동 시도합니다.
+     ========================================================= */
+
+  const CONTROL_ASSET_VERSION = "20260812-DOMFIX-V32";
+
+  const mobileControlDom = {
+    joystickLeft: null,
+    joystickRight: null,
+    jump: null,
+    harvest: null
+  };
+
+  function withControlVersion(src) {
+    const separator = src.includes("?") ? "&" : "?";
+    return `${src}${separator}v=${encodeURIComponent(CONTROL_ASSET_VERSION)}`;
+  }
+
+  function createControlImage(parent, {
+    className,
+    alt,
+    candidates,
+    zIndex = 5
+  }) {
+    if (!parent) return null;
+
+    const old = parent.querySelector(`img.${className}`);
+    if (old) old.remove();
+
+    const img = document.createElement("img");
+    img.className = className;
+    img.alt = alt;
+    img.draggable = false;
+    img.setAttribute("aria-hidden", "true");
+
+    img.style.setProperty("position", "absolute", "important");
+    img.style.setProperty("inset", "0", "important");
+    img.style.setProperty("width", "100%", "important");
+    img.style.setProperty("height", "100%", "important");
+    img.style.setProperty("max-width", "none", "important");
+    img.style.setProperty("max-height", "none", "important");
+    img.style.setProperty("margin", "0", "important");
+    img.style.setProperty("padding", "0", "important");
+    img.style.setProperty("border", "0", "important");
+    img.style.setProperty("object-fit", "contain", "important");
+    img.style.setProperty("object-position", "center", "important");
+    img.style.setProperty("pointer-events", "none", "important");
+    img.style.setProperty("user-select", "none", "important");
+    img.style.setProperty("-webkit-user-drag", "none", "important");
+    img.style.setProperty("z-index", String(zIndex), "important");
+    img.style.setProperty("display", "block", "important");
+    img.style.setProperty("visibility", "visible", "important");
+
+    let index = 0;
+
+    const tryNext = () => {
+      if (index >= candidates.length) {
+        console.error(
+          `[${BUILD_ID}] 모바일 조작 이미지 로드 실패: ${className}`,
+          candidates
+        );
+        img.dataset.loadState = "failed";
+        return;
+      }
+
+      const rawSrc = candidates[index++];
+      img.dataset.sourcePath = rawSrc;
+      img.dataset.loadState = "loading";
+      img.src = withControlVersion(rawSrc);
+    };
+
+    img.onload = () => {
+      img.dataset.loadState = "loaded";
+      console.log(
+        `[${BUILD_ID}] 모바일 조작 이미지 로드 성공: ${className} -> ${img.dataset.sourcePath}`
+      );
+    };
+
+    img.onerror = () => {
+      console.warn(
+        `[${BUILD_ID}] 모바일 조작 이미지 후보 실패: ${img.dataset.sourcePath}`
+      );
+      tryNext();
+    };
+
+    parent.appendChild(img);
+    tryNext();
+
+    return img;
+  }
+
+  function setJoystickDomVisual(direction = "left") {
+    const left = mobileControlDom.joystickLeft;
+    const right = mobileControlDom.joystickRight;
+
+    if (!left || !right) return;
+
+    const showRight = direction === "right";
+
+    left.style.setProperty(
+      "opacity",
+      showRight ? "0" : "1",
+      "important"
+    );
+
+    right.style.setProperty(
+      "opacity",
+      showRight ? "1" : "0",
+      "important"
+    );
+  }
+
+  function installMobileControlDomImages() {
+    if (joystickBase) {
+      /*
+        CSS background가 갤럭시에서 렌더링되지 않는 문제를 피하기 위해
+        실제 img를 최상단에 올립니다.
+      */
+      joystickBase.style.setProperty("background", "none", "important");
+      joystickBase.style.setProperty("position", "absolute", "important");
+      joystickBase.style.setProperty("overflow", "visible", "important");
+
+      mobileControlDom.joystickLeft = createControlImage(
+        joystickBase,
+        {
+          className: "mobile-control-img-joystick-left",
+          alt: "",
+          candidates: [
+            "assets/image/mobile_joystick_L.png",
+            "assets/image/mobile_joystick.png",
+            "assets/image/mobile_joystick_v2.png"
+          ],
+          zIndex: 10
+        }
+      );
+
+      mobileControlDom.joystickRight = createControlImage(
+        joystickBase,
+        {
+          className: "mobile-control-img-joystick-right",
+          alt: "",
+          candidates: [
+            "assets/image/mobile_joystick_R.png",
+            "assets/image/mobile_joystick_R.jpg",
+            "assets/image/mobile_joystick.png",
+            "assets/image/mobile_joystick_v2.png"
+          ],
+          zIndex: 11
+        }
+      );
+
+      setJoystickDomVisual("left");
+    }
+
+    [
+      [
+        jumpBtn,
+        "mobile-control-img-jump",
+        "jump",
+        [
+          "assets/image/mobile_jump.png",
+          "assets/image/mobile_jump_v2.png"
+        ]
+      ],
+      [
+        harvestBtn,
+        "mobile-control-img-harvest",
+        "harvest",
+        [
+          "assets/image/mobile_harvest.png",
+          "assets/image/mobile_harvest_v2.png"
+        ]
+      ]
+    ].forEach(([button, className, key, candidates]) => {
+      if (!button) return;
+
+      button.style.setProperty("background", "none", "important");
+      button.style.setProperty("position", "relative", "important");
+      button.style.setProperty("overflow", "hidden", "important");
+
+      const span = button.querySelector("span");
+      if (span) {
+        span.style.setProperty("display", "none", "important");
+      }
+
+      mobileControlDom[key] = createControlImage(
+        button,
+        {
+          className,
+          alt: "",
+          candidates,
+          zIndex: 10
+        }
+      );
+    });
+  }
+
   const images = {};
 
   const mobileJoystickPreload = [];
@@ -144,27 +344,8 @@
   const backgroundSound = new Audio("assets/sound/backsound.mp3");
   backgroundSound.preload = "auto";
   backgroundSound.loop = true;
-  backgroundSound.setAttribute("playsinline", "");
-  backgroundSound.setAttribute("webkit-playsinline", "");
-
   const BACKGROUND_VOLUME = 0.28;
   backgroundSound.volume = BACKGROUND_VOLUME;
-
-  backgroundSound.addEventListener("canplay", () => {
-    console.log(`[${BUILD_ID}] 배경음 canplay`);
-  });
-
-  backgroundSound.addEventListener("playing", () => {
-    console.log(`[${BUILD_ID}] 배경음 playing`);
-  });
-
-  backgroundSound.addEventListener("error", () => {
-    console.error(`[${BUILD_ID}] 배경음 파일 로드 오류`, {
-      src: backgroundSound.currentSrc || backgroundSound.src,
-      code: backgroundSound.error?.code ?? null,
-      message: backgroundSound.error?.message ?? ""
-    });
-  });
 
   let gameRunning = false;
   let lastFrameTime = performance.now();
@@ -429,6 +610,8 @@
 
       joystickBase.dataset.joyVisualDirection =
         "left";
+
+      setJoystickDomVisual("left");
     }
 
     if (joystickKnob) {
@@ -499,57 +682,11 @@
   function playBackgroundSound({ restart = false } = {}) {
     try {
       backgroundSound.volume = BACKGROUND_VOLUME;
-
-      if (restart) {
-        try {
-          backgroundSound.currentTime = 0;
-        } catch (error) {
-          console.warn(`[${BUILD_ID}] 배경음 currentTime 초기화 실패`, error);
-        }
-      }
-
-      const playPromise = backgroundSound.play();
-
-      if (playPromise && typeof playPromise.catch === "function") {
-        playPromise.catch((error) => {
-          console.error(`[${BUILD_ID}] 배경음 play() 실패`, error);
-          console.error(`[${BUILD_ID}] 배경음 상태`, {
-            src: backgroundSound.currentSrc || backgroundSound.src,
-            networkState: backgroundSound.networkState,
-            readyState: backgroundSound.readyState,
-            paused: backgroundSound.paused,
-            muted: backgroundSound.muted,
-            volume: backgroundSound.volume
-          });
-        });
-      }
+      if (restart) backgroundSound.currentTime = 0;
+      backgroundSound.play().catch(() => {
+      });
     } catch (error) {
-      console.error(`[${BUILD_ID}] 배경음 재생 처리 실패`, error);
-    }
-  }
-
-  function unlockBackgroundSoundFromUserGesture() {
-    try {
-      backgroundSound.volume = BACKGROUND_VOLUME;
-      backgroundSound.muted = false;
-
-      if (backgroundSound.readyState === 0) {
-        backgroundSound.load();
-      }
-
-      const playPromise = backgroundSound.play();
-
-      if (playPromise && typeof playPromise.then === "function") {
-        playPromise
-          .then(() => {
-            console.log(`[${BUILD_ID}] 모바일 배경음 unlock 성공`);
-          })
-          .catch((error) => {
-            console.error(`[${BUILD_ID}] 모바일 배경음 unlock 실패`, error);
-          });
-      }
-    } catch (error) {
-      console.error(`[${BUILD_ID}] 모바일 배경음 unlock 처리 실패`, error);
+      console.warn(`[${BUILD_ID}] 배경음 재생 실패`, error);
     }
   }
 
@@ -567,15 +704,7 @@
     successOverlay.classList.remove("show");
     failOverlay.classList.remove("show");
     gameRunning = true;
-
-    // 모바일에서는 pointerdown 단계에서 먼저 오디오를 unlock한다.
-    // 혹시 아직 재생되지 않았다면 여기서 한 번 더 시도한다.
-    if (backgroundSound.paused) {
-      playBackgroundSound({ restart: true });
-    } else {
-      backgroundSound.volume = BACKGROUND_VOLUME;
-    }
-
+    playBackgroundSound({ restart: true });
     lastFrameTime = performance.now();
     render();
     requestAnimationFrame(gameLoop);
@@ -1974,6 +2103,8 @@
     joystickBase.dataset.joyVisualDirection =
       nextDirection;
 
+    setJoystickDomVisual(nextDirection);
+
     if (nextDirection === "right") {
       joystickBase.classList.add(
         "joy-right"
@@ -2025,28 +2156,14 @@
   bindActionButton(jumpBtn, jump);
   bindActionButton(harvestBtn, harvest);
 
-  const restartSuccessBtn = document.getElementById("restartSuccessBtn");
-  const restartFailBtn = document.getElementById("restartFailBtn");
-  const successLinkBtn = document.getElementById("successLinkBtn");
-
-  // 모바일 브라우저의 autoplay 제한을 피하기 위해,
-  // 실제 손가락이 버튼에 닿는 pointerdown 순간에 배경음을 먼저 unlock한다.
-  [startBtn, restartSuccessBtn, restartFailBtn].forEach((button) => {
-    button?.addEventListener(
-      "pointerdown",
-      unlockBackgroundSoundFromUserGesture,
-      { passive: true }
-    );
-  });
-
   startBtn.addEventListener("click", startGame);
   howToBtn.addEventListener("click", openTutorial);
   replayTutorialBtn?.addEventListener("click", startTutorialDemo);
   closeHowToBtn.addEventListener("click", closeTutorial);
 
-  restartSuccessBtn?.addEventListener("click", startGame);
-  restartFailBtn?.addEventListener("click", startGame);
-  successLinkBtn?.addEventListener("click", () => {
+  document.getElementById("restartSuccessBtn").addEventListener("click", startGame);
+  document.getElementById("restartFailBtn").addEventListener("click", startGame);
+  document.getElementById("successLinkBtn").addEventListener("click", () => {
     window.open(SUCCESS_LINK, "_blank", "noopener");
   });
 
@@ -2082,7 +2199,17 @@
       pixelMoundReady: imageReady("holePixel"),
       pixelHoleReady: imageReady("holePixel"),
       backgroundMusicPlaying: !backgroundSound.paused,
-      remainingPotatoes: state.potatoes.filter((potato) => !potato.removed).length
+      remainingPotatoes: state.potatoes.filter((potato) => !potato.removed).length,
+      mobileControls: {
+        joystickLeft: mobileControlDom.joystickLeft?.dataset.loadState ?? null,
+        joystickLeftSrc: mobileControlDom.joystickLeft?.dataset.sourcePath ?? null,
+        joystickRight: mobileControlDom.joystickRight?.dataset.loadState ?? null,
+        joystickRightSrc: mobileControlDom.joystickRight?.dataset.sourcePath ?? null,
+        jump: mobileControlDom.jump?.dataset.loadState ?? null,
+        jumpSrc: mobileControlDom.jump?.dataset.sourcePath ?? null,
+        harvest: mobileControlDom.harvest?.dataset.loadState ?? null,
+        harvestSrc: mobileControlDom.harvest?.dataset.sourcePath ?? null
+      }
     }),
     start: startGame,
     jump,
@@ -2099,6 +2226,10 @@
 
   async function bootGame() {
     resetState();
+
+    // Galaxy / Samsung Internet에서도 실제 <img>로 조작 이미지 표시
+    installMobileControlDomImages();
+
     applyMobileControlSizes();
     loadImages();
 
